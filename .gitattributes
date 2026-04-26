@@ -6,3 +6,8 @@
 *.toml text eol=lf
 *.md text eol=lf
 *.tsv text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.ps1 text eol=lf
+*.plist text eol=lf
+Makefile text eol=lf

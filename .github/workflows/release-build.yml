@@ -1,0 +1,113 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - "release/v**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.display_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - display_name: Windows x64
+            os: windows-latest
+            runtime: win-x64
+            package_name: LocalNetViewer-win-x64.zip
+          - display_name: macOS arm64
+            os: macos-latest
+            runtime: osx-arm64
+            package_name: LocalNetViewer-macos-arm64.zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore LocalNetViewer.slnx
+
+      - name: Publish
+        shell: pwsh
+        run: >
+          dotnet publish src/LocalNetViewer.App/LocalNetViewer.App.csproj
+          --configuration Release
+          --runtime ${{ matrix.runtime }}
+          --self-contained false
+          --output artifacts/publish/${{ matrix.runtime }}
+
+      - name: Package Windows artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts/packages | Out-Null
+          Compress-Archive `
+            -Path artifacts/publish/${{ matrix.runtime }}/* `
+            -DestinationPath artifacts/packages/${{ matrix.package_name }} `
+            -Force
+
+      - name: Package macOS app bundle
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle="artifacts/bundle/LocalNetViewer.app"
+          mkdir -p "$bundle/Contents/MacOS"
+          cp -R "artifacts/publish/${{ matrix.runtime }}/." "$bundle/Contents/MacOS/"
+          cp packaging/macos/Info.plist "$bundle/Contents/Info.plist"
+          printf 'APPL????' > "$bundle/Contents/PkgInfo"
+          chmod +x "$bundle/Contents/MacOS/LocalNetViewer.App"
+          mkdir -p artifacts/packages
+          ditto -c -k --sequesterRsrc --keepParent "$bundle" "artifacts/packages/${{ matrix.package_name }}"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.runtime }}
+          path: artifacts/packages/${{ matrix.package_name }}
+          if-no-files-found: error
+
+  publish-github-release:
+    name: Attach artifacts to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          files=(dist/**/*.zip)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No release artifacts found." >&2
+            exit 1
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$TAG_NAME" "${files[@]}" \
+              --title "$TAG_NAME" \
+              --notes "Automated release assets for $TAG_NAME."
+          fi

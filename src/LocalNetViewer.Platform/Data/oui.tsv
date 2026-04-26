@@ -1,4 +1,6 @@
 # Source: IEEE Registration Authority public MA-L/MA-M/MA-S CSV listings, fetched 2026-04-26
+# Format: normalized hexadecimal prefix<TAB>organization name
+# Third-party registry data; see THIRD_PARTY_NOTICES.md
 000000	XEROX CORPORATION
 000001	XEROX CORPORATION
 000002	XEROX CORPORATION

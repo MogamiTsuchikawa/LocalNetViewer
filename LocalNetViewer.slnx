@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LocalNetViewer.App/LocalNetViewer.App.csproj" />
+    <Project Path="src/LocalNetViewer.Core/LocalNetViewer.Core.csproj" />
+    <Project Path="src/LocalNetViewer.Platform/LocalNetViewer.Platform.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LocalNetViewer.Tests/LocalNetViewer.Tests.csproj" />
+  </Folder>
+</Solution>

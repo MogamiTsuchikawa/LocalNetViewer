@@ -1,0 +1,40 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Local publish/package artifacts
+artifacts/
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage.*
+*.trx
+*.coverage
+*.coveragexml
+
+# IDE/editor state
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.bak
+
+# NuGet local outputs
+*.nupkg
+*.snupkg
+packages/

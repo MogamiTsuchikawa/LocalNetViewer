@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\LocalNetViewer.Core\LocalNetViewer.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PacketDotNet" Version="1.4.8" />
+    <PackageReference Include="SharpPcap" Version="6.3.1" />
+    <PackageReference Include="System.Management" Version="10.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\oui.tsv" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -20,7 +20,7 @@ jobs:
           - display_name: Windows x64
             os: windows-latest
             runtime: win-x64
-            package_name: LocalNetViewer-win-x64.zip
+            package_name: LocalNetViewer-win-x64.exe
           - display_name: macOS arm64
             os: macos-latest
             runtime: osx-arm64
@@ -40,21 +40,38 @@ jobs:
 
       - name: Publish
         shell: pwsh
-        run: >
-          dotnet publish src/LocalNetViewer.App/LocalNetViewer.App.csproj
-          --configuration Release
-          --runtime ${{ matrix.runtime }}
-          --self-contained false
-          --output artifacts/publish/${{ matrix.runtime }}
+        run: |
+          $publishArgs = @(
+            "publish",
+            "src/LocalNetViewer.App/LocalNetViewer.App.csproj",
+            "--configuration", "Release",
+            "--runtime", "${{ matrix.runtime }}",
+            "--output", "artifacts/publish/${{ matrix.runtime }}"
+          )
+
+          if ("${{ matrix.runtime }}" -eq "win-x64") {
+            $publishArgs += @(
+              "--self-contained", "true",
+              "-p:PublishSingleFile=true",
+              "-p:IncludeNativeLibrariesForSelfExtract=true",
+              "-p:DebugType=None",
+              "-p:DebugSymbols=false"
+            )
+          }
+          else {
+            $publishArgs += @("--self-contained", "false")
+          }
+
+          dotnet @publishArgs
 
       - name: Package Windows artifact
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts/packages | Out-Null
-          Compress-Archive `
-            -Path artifacts/publish/${{ matrix.runtime }}/* `
-            -DestinationPath artifacts/packages/${{ matrix.package_name }} `
+          Copy-Item `
+            -Path artifacts/publish/${{ matrix.runtime }}/LocalNetViewer.App.exe `
+            -Destination artifacts/packages/${{ matrix.package_name }} `
             -Force
 
       - name: Package macOS app bundle
@@ -98,8 +115,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s globstar nullglob
-          files=(dist/**/*.zip)
+          files=()
+          while IFS= read -r file; do
+            files+=("$file")
+          done < <(find dist -type f \( -name '*.zip' -o -name '*.exe' \) -print)
+
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No release artifacts found." >&2
             exit 1

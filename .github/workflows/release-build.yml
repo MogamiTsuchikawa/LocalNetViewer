@@ -46,20 +46,20 @@ jobs:
             "src/LocalNetViewer.App/LocalNetViewer.App.csproj",
             "--configuration", "Release",
             "--runtime", "${{ matrix.runtime }}",
-            "--output", "artifacts/publish/${{ matrix.runtime }}"
+            "--output", "artifacts/publish/${{ matrix.runtime }}",
+            "-p:DebugType=None",
+            "-p:DebugSymbols=false"
           )
 
           if ("${{ matrix.runtime }}" -eq "win-x64") {
             $publishArgs += @(
               "--self-contained", "true",
               "-p:PublishSingleFile=true",
-              "-p:IncludeNativeLibrariesForSelfExtract=true",
-              "-p:DebugType=None",
-              "-p:DebugSymbols=false"
+              "-p:IncludeNativeLibrariesForSelfExtract=true"
             )
           }
           else {
-            $publishArgs += @("--self-contained", "false")
+            $publishArgs += @("--self-contained", "true")
           }
 
           dotnet @publishArgs
@@ -85,6 +85,8 @@ jobs:
           cp packaging/macos/Info.plist "$bundle/Contents/Info.plist"
           printf 'APPL????' > "$bundle/Contents/PkgInfo"
           chmod +x "$bundle/Contents/MacOS/LocalNetViewer.App"
+          codesign --force --deep --sign - "$bundle"
+          codesign --verify --deep --strict --verbose=2 "$bundle"
           mkdir -p artifacts/packages
           ditto -c -k --sequesterRsrc --keepParent "$bundle" "artifacts/packages/${{ matrix.package_name }}"
 
